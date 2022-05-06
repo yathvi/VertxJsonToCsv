@@ -30,7 +30,7 @@ public class JsonToCsv {
         listToCsvHeader = new ArrayList<>();
         listToCsvMap = new HashMap<>();
         processJsonObject(json1Object);
-        for (int i =0 ; i < 500 ; i++)
+        for (int i =0 ; i < 200 ; i++)
             listToCsvArrayList.add(listToCsvMap);
 
         String json2File = "src/main/resources/json2.json";
@@ -41,7 +41,7 @@ public class JsonToCsv {
         listToCsvHeader = new ArrayList<>();
         listToCsvMap = new HashMap<>();
         processJsonArray(json2Array);
-        for (int i =0 ; i < 500 ; i++)
+        for (int i =0 ; i < 200 ; i++)
             listToCsvArrayList.add(listToCsvMap);
 
         convertJsontoCsv(listToCsvArrayList);
