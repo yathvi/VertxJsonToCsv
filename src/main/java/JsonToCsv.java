@@ -47,7 +47,11 @@ public class JsonToCsv {
         convertJsontoCsv(listToCsvArrayList);
     }
 
-
+    /**
+     * @param jsonObjectInString Check whether valid JsonObject format
+     * @return Return true if valid else false
+     */
+    
     private static boolean isJsonObjectValid(String jsonObjectInString) {
         try {
             JsonObject localJsonObject = new JsonObject(jsonObjectInString);
