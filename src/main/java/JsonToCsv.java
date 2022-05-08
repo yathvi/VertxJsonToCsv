@@ -13,6 +13,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+/***
+ * Convert dynamic/nested JsonArray/JsonObject to CSV file, it doesn't depend on Schema.
+ * CSV headers/Column headers will be added as Json hierarchy Key
+ * and the Values of dynamic/nested JsonArray/JsonObject will be added as row in the CSV
+ * and will be mapped to the right CSV header.
+ */
 public class JsonToCsv {
     /* CSV Header */
     private static ArrayList<String> listToCsvHeader;
@@ -30,67 +36,89 @@ public class JsonToCsv {
         mergeDifferentJsonsAndAddInCsv();
     }
 
+    /**
+     * Read JsonObject.json; store the key - value in Hashmap @param listToCsvMap,
+     * add this multiple Hashmap @param listToCsvMap to ArrayList @param listToCsvArrayList.
+     *
+     * Read JsonArray.json; store the key - value in Hashmap @param listToCsvMap,
+     * add this multiple Hashmap @param listToCsvMap to ArrayList @param listToCsvArrayList.
+     *
+     * Trigger convertJsontoCsv by passing ArrayList @param listToCsvArrayList.
+     *
+     * @throws IOException
+     */
     private static void addDifferentJsonsToCsv() throws IOException {
         listToCsvArrayList = new ArrayList<>();
 
-        String json1File = "src/main/resources/json1.json";
-        String json1Str = readFileAsString(json1File);
-        /* Append Json1 Keys*/
-        //String appendJson1Key = "json1_";
-        String appendJson1Key = "";
-        /* Passing json1.json JsonObject*/
-        JsonObject json1Object = new JsonObject(json1Str);
+        String jsonObjectFile = "src/main/resources/JsonObject.json";
+        String jsonObjectStr = readFileAsString(jsonObjectFile);
+        /* Append JsonObject Keys*/
+        //String appendJsonObjectKey = "jsonObject_";
+        String appendJsonObjectKey = "";
+        /* Passing JsonObject.json JsonObject*/
+        JsonObject jsonObject = new JsonObject(jsonObjectStr);
 
         listToCsvHeader = new ArrayList<>();
         listToCsvMap = new HashMap<>();
-        processJsonObject(json1Object,appendJson1Key);
+        processJsonObject(jsonObject,appendJsonObjectKey);
         for (int i =0 ; i < 200 ; i++)
             listToCsvArrayList.add(listToCsvMap);
 
-        String json2File = "src/main/resources/json2.json";
-        String json2Str = readFileAsString(json2File);
-        /* Append Json2 Keys*/
-        //String appendJson2Key = "json2_";
-        String appendJson2Key = "";
-        /* Passing json2.json JsonArray*/
-        JsonArray json2Array = new JsonArray(json2Str);
+        String jsonArrayFile = "src/main/resources/JsonArray.json";
+        String jsonArrayStr = readFileAsString(jsonArrayFile);
+        /* Append JsonArray Keys*/
+        //String appendJsonArrayKey = "jsonArray_";
+        String appendJsonArrayKey = "";
+        /* Passing JsonArray.json JsonArray*/
+        JsonArray jsonArray = new JsonArray(jsonArrayStr);
 
         listToCsvHeader = new ArrayList<>();
         listToCsvMap = new HashMap<>();
-        processJsonArray(json2Array,appendJson2Key);
+        processJsonArray(jsonArray,appendJsonArrayKey);
         for (int i =0 ; i < 200 ; i++)
             listToCsvArrayList.add(listToCsvMap);
 
         convertJsontoCsv(listToCsvArrayList);
     }
 
+    /**
+     * Read JsonObject.json; store the key - value in Hashmap @param listToCsvMap,
+     * add this multiple Hashmap @param listToCsvMap to ArrayList @param listToCsvArrayList.
+     *
+     * Read JsonArray.json; store the key - value in Hashmap @param listToCsvMap,
+     * add this multiple Hashmap @param listToCsvMap to ArrayList @param listToCsvArrayList_2.
+     *
+     * Trigger mergeJsontoCsv by passing ArrayList @param listToCsvArrayList and ArrayList @param listToCsvArrayList_2.
+     *
+     * @throws IOException
+     */
     private static void mergeDifferentJsonsAndAddInCsv() throws IOException {
         listToCsvArrayList = new ArrayList<>();
         listToCsvArrayList_2 = new ArrayList<>();
 
-        String json1File = "src/main/resources/json1.json";
-        String json1Str = readFileAsString(json1File);
-        /* Append Json1 Keys*/
-        String appendJson1Key = "json1_";
-        /* Passing json1.json JsonObject*/
-        JsonObject json1Object = new JsonObject(json1Str);
+        String jsonObjectFile = "src/main/resources/JsonObject.json";
+        String jsonObjectStr = readFileAsString(jsonObjectFile);
+        /* Append JsonObject Keys*/
+        String appendJsonObjectKey = "jsonObject_";
+        /* Passing JsonObject.json JsonObject*/
+        JsonObject jsonObject = new JsonObject(jsonObjectStr);
 
         listToCsvHeader = new ArrayList<>();
         listToCsvMap = new HashMap<>();
-        processJsonObject(json1Object,appendJson1Key);
+        processJsonObject(jsonObject,appendJsonObjectKey);
         for (int i =0 ; i < 10 ; i++)
             listToCsvArrayList.add(listToCsvMap);
 
-        String json2File = "src/main/resources/json2.json";
-        String json2Str = readFileAsString(json2File);
-        /* Append Json2 Keys*/
-        String appendJson2Key = "json2_";
-        /* Passing json2.json JsonArray*/
-        JsonArray json2Array = new JsonArray(json2Str);
+        String jsonArrayFile = "src/main/resources/JsonArray.json";
+        String jsonArrayStr = readFileAsString(jsonArrayFile);
+        /* Append JsonArray Keys*/
+        String appendJsonArrayKey = "jsonArray_";
+        /* Passing JsonArray.json JsonArray*/
+        JsonArray jsonArray = new JsonArray(jsonArrayStr);
 
         listToCsvHeader = new ArrayList<>();
         listToCsvMap = new HashMap<>();
-        processJsonArray(json2Array,appendJson2Key);
+        processJsonArray(jsonArray,appendJsonArrayKey);
         for (int i =0 ; i < 10 ; i++)
             listToCsvArrayList_2.add(listToCsvMap);
 
@@ -171,6 +199,7 @@ public class JsonToCsv {
     }
 
     /**
+     * Add each Dynamic/nested Json as a row in CSV.
      * @param listToCsvArrayList ArrayList of HashMaps(key-values),
      *                              keys are added as header in CSV,
      *                              values will be added as rows in CSV.
@@ -226,7 +255,7 @@ public class JsonToCsv {
     }
 
     /**
-     *
+     * Merge Different Jsons and add in Csv as a single row based on common value. In this case key10.
      * @param listToCsvArrayList ArrayList of HashMaps(key-values); first Json, keys are added as header in CSV, values will be added as rows in CSV.
      * @param listToCsvArrayList_2 ArrayList of HashMaps(key-values); second Json, keys are added as header in CSV, values will be added as rows in CSV.
      * @throws IOException
@@ -269,16 +298,16 @@ public class JsonToCsv {
         csvWriter.writeNext(headerStrArray);
 
 
-        /* If key10 value of Json1 and Json2 match, then merge Json1 and Json2 as a row in CSV. */
+        /* If key10 value of JsonObject and JsonArray match, then merge JsonObject and JsonArray as a row in CSV. */
 
         for (int i = 0; i < listToCsvArrayList.size(); i++) {
             for (int j = 0; j < listToCsvArrayList_2.size(); j++) {
-                if(listToCsvArrayList.get(i).containsKey("json1_key2:key3:key6:key10:")
+                if(listToCsvArrayList.get(i).containsKey("jsonObject_key2:key3:key6:key10:")
                         &&
-                        listToCsvArrayList_2.get(j).containsKey("json2_key5:key6:key10:")
+                        listToCsvArrayList_2.get(j).containsKey("jsonArray_key5:key6:key10:")
                         &&
-                        listToCsvArrayList.get(i).get("json1_key2:key3:key6:key10:")
-                                .equals(listToCsvArrayList_2.get(j).get("json2_key5:key6:key10:"))) {
+                        listToCsvArrayList.get(i).get("jsonObject_key2:key3:key6:key10:")
+                                .equals(listToCsvArrayList_2.get(j).get("jsonArray_key5:key6:key10:"))) {
 
                     String[] mapValueArray = new String[headerStrSet.size()];
                     int k = 0;
