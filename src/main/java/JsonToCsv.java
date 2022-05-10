@@ -316,6 +316,7 @@ public class JsonToCsv {
                             mapValueArray[k++] = jsonKeyValueList.get(i).get(key);
                         else if (jsonKeyValueList_2.get(j).containsKey(key))
                             mapValueArray[k++] = jsonKeyValueList_2.get(j).get(key);
+                        else k++;
                     }
                     csvWriter.writeNext(mapValueArray);
                 }
