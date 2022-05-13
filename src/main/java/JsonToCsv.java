@@ -61,7 +61,7 @@ public class JsonToCsv {
         jsonKeyAsHeader = new ArrayList<>();
         jsonKeyValue = new HashMap<>();
         processJsonObject(jsonObject,appendJsonObjectKey);
-        for (int i =0 ; i < 200 ; i++)
+        for (int i =0 ; i < 25 ; i++)
             jsonKeyValueList.add(jsonKeyValue);
 
         String jsonArrayFile = "src/main/resources/JsonArray.json";
@@ -75,7 +75,7 @@ public class JsonToCsv {
         jsonKeyAsHeader = new ArrayList<>();
         jsonKeyValue = new HashMap<>();
         processJsonArray(jsonArray,appendJsonArrayKey);
-        for (int i =0 ; i < 200 ; i++)
+        for (int i =0 ; i < 25 ; i++)
             jsonKeyValueList.add(jsonKeyValue);
 
         convertJsontoCsv(jsonKeyValueList);
@@ -129,7 +129,7 @@ public class JsonToCsv {
      * @param jsonObjectInString Check whether valid JsonObject format
      * @return Return true if valid else false
      */
-    
+
     private static boolean isJsonObjectValid(String jsonObjectInString) {
         try {
             JsonObject localJsonObject = new JsonObject(jsonObjectInString);
@@ -148,7 +148,7 @@ public class JsonToCsv {
         try {
             JsonArray localJsonArray = new JsonArray(jsonArrayInString);
             for (int i = 0; i < localJsonArray.size(); i++) {
-                if (!isJsonObjectValid(localJsonArray.getJsonObject(i).toString()))
+                if (!isJsonObjectValid(String.valueOf(localJsonArray.getJsonObject(i))))
                     return false;
             }
             return true;
@@ -189,6 +189,12 @@ public class JsonToCsv {
                         for (String str : jsonKeyAsHeader) {
                             headerKey.append(str);
                         }
+                        /* If key is there in HashMap, add new key with a counter appended. */
+                        if(jsonKeyValue.containsKey(String.valueOf(headerKey)))
+                        {
+                            int count = 1;
+                            headerKey = appendHeaderKey(count,json);
+                        }
                         //System.out.print(headerKey+"::-->:::");
                         //System.out.println(a.getValue());
                         jsonKeyValue.put(String.valueOf(headerKey), String.valueOf(a.getValue()));
@@ -196,6 +202,27 @@ public class JsonToCsv {
                     }
                 }
         );
+    }
+
+    /**
+     * If JsonArray/JsonObject has same key name, add new key with a counter appended.
+     * @param count
+     * @return
+     */
+
+    private static StringBuilder appendHeaderKey(int count, String json) {
+        StringBuilder headerKey = new StringBuilder();
+        headerKey.append(json);
+        for (String str : jsonKeyAsHeader) {
+            headerKey.append(str);
+        }
+        headerKey.append(count);
+        for (String key: jsonKeyValue.keySet()) {
+            if(String.valueOf(headerKey).equalsIgnoreCase(key)) {
+                headerKey = appendHeaderKey(++count,json);
+            }
+        }
+        return headerKey;
     }
 
     /**
