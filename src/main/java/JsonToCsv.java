@@ -5,13 +5,11 @@ import io.vertx.core.json.JsonObject;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /***
  * Convert dynamic/nested JsonArray/JsonObject to CSV file, it doesn't depend on Schema.
@@ -23,7 +21,8 @@ public class JsonToCsv {
     /* CSV Header */
     private static ArrayList<String> jsonKeyAsHeader;
 
-    /* JSON Key-Value, Keys added as header in CSV, Values added as row in CSV  */
+    /* JSON Key-Value, Keys added as header in CSV, Values added as row in CSV
+    *  Using LinkedHashMap to maintain order of insertion  */
     private static HashMap<String, String> jsonKeyValue;
 
     /* List of JSON Key-Value, Keys added as header in CSV, Values added as row in CSV */
@@ -50,7 +49,7 @@ public class JsonToCsv {
     private static void addDifferentJsonsToCsv() throws IOException {
         jsonKeyValueList = new ArrayList<>();
 
-        String jsonObjectFile = "src/main/resources/JsonObject.json";
+        String jsonObjectFile = "src/main/resources/json/JsonObject.json";
         String jsonObjectStr = readFileAsString(jsonObjectFile);
         /* Append JsonObject Keys*/
         //String appendJsonObjectKey = "jsonObject_";
@@ -59,12 +58,12 @@ public class JsonToCsv {
         JsonObject jsonObject = new JsonObject(jsonObjectStr);
 
         jsonKeyAsHeader = new ArrayList<>();
-        jsonKeyValue = new HashMap<>();
+        jsonKeyValue = new LinkedHashMap<>();
         processJsonObject(jsonObject,appendJsonObjectKey);
         for (int i =0 ; i < 25 ; i++)
             jsonKeyValueList.add(jsonKeyValue);
 
-        String jsonArrayFile = "src/main/resources/JsonArray.json";
+        String jsonArrayFile = "src/main/resources/json/JsonArray.json";
         String jsonArrayStr = readFileAsString(jsonArrayFile);
         /* Append JsonArray Keys*/
         //String appendJsonArrayKey = "jsonArray_";
@@ -73,12 +72,12 @@ public class JsonToCsv {
         JsonArray jsonArray = new JsonArray(jsonArrayStr);
 
         jsonKeyAsHeader = new ArrayList<>();
-        jsonKeyValue = new HashMap<>();
+        jsonKeyValue = new LinkedHashMap<>();
         processJsonArray(jsonArray,appendJsonArrayKey);
         for (int i =0 ; i < 25 ; i++)
             jsonKeyValueList.add(jsonKeyValue);
 
-        convertJsontoCsv(jsonKeyValueList);
+        convertJsontoCsv(jsonKeyValueList,"src/main/resources/csvHeaders/CsvListHeaders.txt");
     }
 
     /**
@@ -96,7 +95,7 @@ public class JsonToCsv {
         jsonKeyValueList = new ArrayList<>();
         jsonKeyValueList_2 = new ArrayList<>();
 
-        String jsonObjectFile = "src/main/resources/JsonObject.json";
+        String jsonObjectFile = "src/main/resources/json/JsonObject.json";
         String jsonObjectStr = readFileAsString(jsonObjectFile);
         /* Append JsonObject Keys*/
         String appendJsonObjectKey = "jsonObject_";
@@ -104,12 +103,12 @@ public class JsonToCsv {
         JsonObject jsonObject = new JsonObject(jsonObjectStr);
 
         jsonKeyAsHeader = new ArrayList<>();
-        jsonKeyValue = new HashMap<>();
+        jsonKeyValue = new LinkedHashMap<>();
         processJsonObject(jsonObject,appendJsonObjectKey);
         for (int i =0 ; i < 10 ; i++)
             jsonKeyValueList.add(jsonKeyValue);
 
-        String jsonArrayFile = "src/main/resources/JsonArray.json";
+        String jsonArrayFile = "src/main/resources/json/JsonArray.json";
         String jsonArrayStr = readFileAsString(jsonArrayFile);
         /* Append JsonArray Keys*/
         String appendJsonArrayKey = "jsonArray_";
@@ -117,12 +116,12 @@ public class JsonToCsv {
         JsonArray jsonArray = new JsonArray(jsonArrayStr);
 
         jsonKeyAsHeader = new ArrayList<>();
-        jsonKeyValue = new HashMap<>();
+        jsonKeyValue = new LinkedHashMap<>();
         processJsonArray(jsonArray,appendJsonArrayKey);
         for (int i =0 ; i < 10 ; i++)
             jsonKeyValueList_2.add(jsonKeyValue);
 
-        mergeJsontoCsv(jsonKeyValueList,jsonKeyValueList_2);
+        mergeJsontoCsv(jsonKeyValueList,jsonKeyValueList_2,"src/main/resources/csvHeaders/MergeCsvListHeaders.txt");
     }
 
     /**
@@ -221,9 +220,10 @@ public class JsonToCsv {
         headerKey.append(count);
         if(jsonKeyValue.containsKey(String.valueOf(headerKey)))
         {
-            headerKey = appendHeaderKey(++count);
+            headerKey = appendHeaderKey(++count,json);
         }
         //System.out.println("After :"+headerKey);
+        
         return headerKey;
     }
 
@@ -234,15 +234,21 @@ public class JsonToCsv {
      *                              values will be added as rows in CSV.
      * @throws IOException
      */
-    private static void convertJsontoCsv(ArrayList<HashMap<String, String>> jsonKeyValueList) throws IOException {
+    private static void convertJsontoCsv(ArrayList<HashMap<String, String>> jsonKeyValueList, String keysText) throws IOException {
 
-        Path fileToDeletePath = Paths.get("src/main/resources/CsvList.csv");
+        Path fileToDeletePath = Paths.get("src/main/resources/csv/CsvList.csv");
         Files.deleteIfExists(fileToDeletePath);
-        File listFile = new File("src/main/resources/CsvList.csv");
+        File listFile = new File("src/main/resources/csv/CsvList.csv");
         FileWriter listFileWriter = new FileWriter(listFile, true);
         CSVWriter csvWriter = new CSVWriter(listFileWriter);
-        Set<String> headerStrSet = new HashSet<>();
+        Set<String> headerStrSet = new LinkedHashSet<>();
 
+        /* Read Keys if file is not empty*/
+        Scanner sc = new Scanner(new File(keysText));
+        while(sc.hasNext()){
+            String line = sc.nextLine();
+            headerStrSet.add(line);
+        }
         /*
          Read all HashMap Keys from ArrayList, store in a Set @headerStrSet and add as a header in CSV.
          */
@@ -250,10 +256,17 @@ public class JsonToCsv {
         /*jsonKeyValueList.forEach(map-> headerStrSet.addAll(map.keySet()));
           csvWriter.writeNext(headerStrSet.stream().toArray(String[]::new));*/
 
-        for (int i = 0; i < jsonKeyValueList.size(); i++) {
-            for (String headerStr : jsonKeyValueList.get(i).keySet()) {
-                headerStrSet.add(headerStr);
+        if(headerStrSet.isEmpty()) {
+            PrintWriter headerWriter = new PrintWriter(keysText, "UTF-8");
+            for (int i = 0; i < jsonKeyValueList.size(); i++) {
+                for (String headerStr : jsonKeyValueList.get(i).keySet()) {
+                    headerStrSet.add(headerStr);
+                }
             }
+            for (String headerStr : headerStrSet) {
+                headerWriter.println(headerStr);
+            }
+            headerWriter.close();
         }
         /* Convert Set @headerStrSet to String array @headerStrArray  */
         String[] headerStrArray = new String[headerStrSet.size()];
@@ -289,33 +302,49 @@ public class JsonToCsv {
      * @param jsonKeyValueList_2 ArrayList of HashMaps(key-values); second Json, keys are added as header in CSV, values will be added as rows in CSV.
      * @throws IOException
      */
-    private static void mergeJsontoCsv(ArrayList<HashMap<String, String>> jsonKeyValueList, ArrayList<HashMap<String, String>> jsonKeyValueList_2) throws IOException {
+    private static void mergeJsontoCsv(ArrayList<HashMap<String, String>> jsonKeyValueList, ArrayList<HashMap<String, String>> jsonKeyValueList_2, String keysText) throws IOException {
 
-        Path fileToDeletePath = Paths.get("src/main/resources/MergeCsvList.csv");
+        Path fileToDeletePath = Paths.get("src/main/resources/csv/MergeCsvList.csv");
         Files.deleteIfExists(fileToDeletePath);
-        File listFile = new File("src/main/resources/MergeCsvList.csv");
+        File listFile = new File("src/main/resources/csv/MergeCsvList.csv");
         FileWriter listFileWriter = new FileWriter(listFile, true);
         CSVWriter csvWriter = new CSVWriter(listFileWriter);
-        Set<String> headerStrSet = new HashSet<>();
+        Set<String> headerStrSet = new LinkedHashSet<>();
 
-        /*
-            Read all HashMap Keys from ArrayList @param jsonKeyValueList, store in a Set @param headerStrSet and add as a header in CSV.
-        */
-
-        for (int i = 0; i < jsonKeyValueList.size(); i++) {
-            for (String headerStr : jsonKeyValueList.get(i).keySet()) {
-                headerStrSet.add(headerStr);
-            }
+        /* Read Keys if file is not empty*/
+        Scanner sc = new Scanner(new File(keysText));
+        while(sc.hasNext()){
+            String line = sc.nextLine();
+            headerStrSet.add(line);
         }
 
-        /*
-            Read all HashMap Keys from ArrayList @param jsonKeyValueList_2, store in a Set @param headerStrSet and add as a header in CSV.
-        */
+        if(headerStrSet.isEmpty()) {
+            PrintWriter headerWriter = new PrintWriter(keysText, "UTF-8");
+            /*
+                Read all HashMap Keys from ArrayList @param jsonKeyValueList, store in a Set @param headerStrSet and add as a header in CSV.
+            */
 
-        for (int i = 0; i < jsonKeyValueList_2.size(); i++) {
-            for (String headerStr : jsonKeyValueList_2.get(i).keySet()) {
-                headerStrSet.add(headerStr);
+            for (int i = 0; i < jsonKeyValueList.size(); i++) {
+                for (String headerStr : jsonKeyValueList.get(i).keySet()) {
+                    headerStrSet.add(headerStr);
+                }
             }
+
+            /*
+                Read all HashMap Keys from ArrayList @param jsonKeyValueList_2, store in a Set @param headerStrSet and add as a header in CSV.
+            */
+
+            for (int i = 0; i < jsonKeyValueList_2.size(); i++) {
+                for (String headerStr : jsonKeyValueList_2.get(i).keySet()) {
+                    headerStrSet.add(headerStr);
+                }
+            }
+
+            for (String headerStr : headerStrSet) {
+                headerWriter.println(headerStr);
+            }
+
+            headerWriter.close();
         }
 
         /* Convert Set @headerStrSet to String array @headerStrArray  */
