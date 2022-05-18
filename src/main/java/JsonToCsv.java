@@ -139,18 +139,14 @@ public class JsonToCsv {
     }
 
     /**
-     * @param jsonArrayInString Check whether valid JsonArray format
+     * @param jsonArrayInString Check whether valid JsonArray format, if so process each Json in the array
      * @return Return true if valid else false
      */
 
-    private static boolean isJsonArrayValid(String jsonArrayInString) {
+    private static boolean isJsonArrayValid(String jsonArrayInString, String json) {
         try {
-            JsonArray localJsonArray = new JsonArray(jsonArrayInString);
-            for (int i = 0; i < localJsonArray.size(); i++) {
-                if (!isJsonObjectValid(String.valueOf(localJsonArray.getJsonObject(i))))
-                    return false;
-            }
-            return true;
+            JsonArray jsonArray = new JsonArray(jsonArrayInString);
+            return processJsonArray(jsonArray,json);
         } catch (Exception e) {
             return false;
         }
@@ -160,10 +156,34 @@ public class JsonToCsv {
      * @param jsonArray Process each Json in the array
      * @param json if different json has same key name, use this param which will append string to differentiate them.
      */
-    private static void processJsonArray(JsonArray jsonArray, String json) {
+    private static boolean processJsonArray(JsonArray jsonArray, String json) {
+
+        /* Check if JsonArray has empty values like [], [{}], [{},{}], [{},{"a":"b"},{},{"c":"d"}] ... */
+        int emptyValues = 0;
+
+        /* Example key65": ["jsonObject_value65-1", "jsonObject_value65-2", "jsonObject_value65-3"] */
+        boolean itsArrayNotJsonArray = true;
+
         for (int i = 0; i < jsonArray.size(); i++) {
-            processJsonObject(jsonArray.getJsonObject(i),json);
+            try
+            {
+                if (isJsonObjectValid(String.valueOf(jsonArray.getJsonObject(i)))) {
+                    processJsonObject(jsonArray.getJsonObject(i),json);
+                    itsArrayNotJsonArray = false;
+                    if(jsonArray.getJsonObject(i).size()==0){
+                        emptyValues++;
+                    }
+                }
+            } catch (Exception e) {
+                /* Ignore this errors if JsonArray doesn't have valid JsonObject */
+            }
         }
+
+        if (emptyValues > 0 || itsArrayNotJsonArray) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -174,33 +194,33 @@ public class JsonToCsv {
      */
     private static void processJsonObject(JsonObject jsonObject, String json) {
         jsonObject.forEach(a -> {
-                    jsonKeyAsHeader.add(a.getKey() + ":");
-                    if (isJsonArrayValid(String.valueOf(a.getValue()))) {
-                        processJsonArray(new JsonArray(String.valueOf(a.getValue())),json);
-                        jsonKeyAsHeader.remove(jsonKeyAsHeader.size() - 1);
-                    } else if (isJsonObjectValid(String.valueOf(a.getValue()))) {
-                        processJsonObject(new JsonObject(String.valueOf(a.getValue())),json);
-                        jsonKeyAsHeader.remove(jsonKeyAsHeader.size() - 1);
-                    } else {
-                        /* @headerKey is the key, @a.getValue() is the value */
-                        StringBuilder headerKey = new StringBuilder();
-                        headerKey.append(json);
-                        for (String str : jsonKeyAsHeader) {
-                            headerKey.append(str);
-                        }
-                        /* If key is there in HashMap, add new key with a counter appended. */
-                        if(jsonKeyValue.containsKey(String.valueOf(headerKey)))
-                        {
-                            int count = 1;
-                            headerKey = appendHeaderKey(count,json);
-                        }
-                        //System.out.print(headerKey+"::-->:::");
-                        //System.out.println(a.getValue());
-                        jsonKeyValue.put(String.valueOf(headerKey), String.valueOf(a.getValue()));
-                        jsonKeyAsHeader.remove(jsonKeyAsHeader.size() - 1);
-                    }
+            jsonKeyAsHeader.add(a.getKey() + ":");
+            /* Check for empty values like [], [{}], [{},{}] ... */
+            if (isJsonArrayValid(String.valueOf(a.getValue()),json) && new JsonArray(String.valueOf(a.getValue())).size()!=0){
+                jsonKeyAsHeader.remove(jsonKeyAsHeader.size() - 1);
+            /* Check for empty values like {} */
+            } else if (isJsonObjectValid(String.valueOf(a.getValue())) && new JsonObject(String.valueOf(a.getValue())).size()!=0) {
+                processJsonObject(new JsonObject(String.valueOf(a.getValue())),json);
+                jsonKeyAsHeader.remove(jsonKeyAsHeader.size() - 1);
+            } else {
+                /* @headerKey is the key, @a.getValue() is the value */
+                StringBuilder headerKey = new StringBuilder();
+                headerKey.append(json);
+                for (String str : jsonKeyAsHeader) {
+                    headerKey.append(str);
                 }
-        );
+                /* If key is there in HashMap, add new key with a counter appended. */
+                if(jsonKeyValue.containsKey(String.valueOf(headerKey)))
+                {
+                    int count = 1;
+                    headerKey = appendHeaderKey(count,json);
+                }
+                //System.out.print(headerKey+"::-->:::");
+                //System.out.println(a.getValue());
+                jsonKeyValue.put(String.valueOf(headerKey), String.valueOf(a.getValue()));
+                jsonKeyAsHeader.remove(jsonKeyAsHeader.size() - 1);
+            }
+        });
     }
 
     /**
